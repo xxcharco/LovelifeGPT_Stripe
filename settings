@@ -1,0 +1,53 @@
+// API設定部分
+const props = PropertiesService.getScriptProperties(); // スクリプトプロパティを取得
+
+// LINE Bot関連
+const LINE_ACCESS_TOKEN = props.getProperty('LINE_ACCESS_TOKEN');  // LINEのアクセストークン
+
+// Azure OpenAI API関連
+const AZURE_API_KEY = props.getProperty('AZURE_KEY');  // Azure OpenAI APIキー
+const AZURE_ENDPOINT = props.getProperty('AZURE_ENDPOINT'); // Azure OpenAIのエンドポイント
+
+// 使用API
+const LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply';
+
+// サブスクリプションのURL 例) https://buy.stripe.com/test_*******
+STRIPE_SUBSCRIPTION_URL_ONE = "https://tsfcm.jp/okinakanokorun";
+STRIPE_SUBSCRIPTION_URL_TWO = "https://liebe.tokyo";
+
+// 上限関係
+const MAX_COUNT_LOG = 10; // 過去のLINEでのメッセージを遡る回数
+const MAX_COUNT_DAILY_MES = 3; // 無料ユーザーの返答回数
+
+// スプレッドシートの情報
+const SS         = SpreadsheetApp.getActiveSpreadsheet();
+const SHEET      = SS.getSheetByName('制約');
+const SHEET_LOG  = SS.getSheetByName('ログ'); 
+const SHEET_USER = SS.getSheetByName('ユーザー');
+
+// Azure OpenAI APIを呼び出す関数 (シンプルに)
+function callAzureApi(messages) {
+  // messagesが未定義または配列でない場合、空の配列を作成
+  if (!messages || !Array.isArray(messages)) {
+    messages = [];
+  }
+
+  const constraints = SHEET.getRange(1, 1).getValue(); // 制約の取得
+  messages.unshift({"role": "system", "content": constraints});  // 制約を追加
+
+  const requestOptions = {
+    "method": "post",
+    "headers": {
+      "Content-Type": "application/json",
+      "api-key": AZURE_API_KEY
+    },
+    "payload": JSON.stringify({
+      "messages": messages,
+      "max_tokens": 1000
+    })
+  };
+
+  const response = UrlFetchApp.fetch(AZURE_ENDPOINT, requestOptions);
+  const json = JSON.parse(response.getContentText());
+  return json['choices'][0]['message']['content'].trim();  // Azure APIからの返答を返す
+}
