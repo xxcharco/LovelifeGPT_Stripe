@@ -1,0 +1,7 @@
+function refreshTodaysTime() {
+  let values = SHEET_USER.getDataRange().getValues(); // 全範囲を選択して取得
+  
+  for (let i = 1; i < values.length; i++)
+    values[i][7] = 0;
+  SHEET_USER.getDataRange().setValues(values); // 全範囲を選択して更新
+}
